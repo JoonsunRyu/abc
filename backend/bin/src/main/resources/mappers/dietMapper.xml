@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.mvc.model.dao.DietDao">
+	 <!-- id와 날짜 조건 조회 (해당 날짜 식단 조회) -->
+	 
+	 <select id="selectAllByIdAndDate" parameterType="Map" resultType="Diet">
+	 	SELECT *
+	 	FROM diet
+	 	WHERE id = #{id} AND weekday = #{weekday};
+	 </select>
+
+	 <!-- id와 날짜와 시간과 음식 조회 (해당 날짜 식단의 특정 시간 특정 음식 조회) -->
+	 
+	 <select id="selectOneByIdAndDateAndFood" parameterType="Diet" resultType="Diet">
+	 	SELECT *
+	 	FROM diet
+	 	WHERE id = #{id} AND weekday = #{weekday} AND meal = #{meal} AND food = #{food};
+	 </select>
+	 
+	 <!-- 등록 -->
+	 
+	 <insert id="insertDiet" parameterType="Diet">
+	 	INSERT INTO diet
+	 	VALUES(#{id}, #{weekday},#{meal} ,#{food});
+	 </insert>
+	 
+	 <!-- 수정 -->
+	 <update id="updateDiet" parameterType="Diet">
+	 	UPDATE diet
+	 	SET food = #{food}, meal = #{meal}
+	 	WHERE id = #{id} AND weekday = #{weekday} AND meal = #{meal} AND food = #{food};
+	 </update>
+	 
+	 <!-- 일주일 식단 삭제 -->
+	 <delete id="deleteAllDiet" parameterType="String">
+	 	DELETE FROM diet
+	 	WHERE id = #{id};
+	 </delete>
+	 
+	 <!-- 해당 요일 식단 삭제 -->
+	 <delete id="deleteOneDayDiet" parameterType="Map">
+	 	DELETE FROM diet
+	 	WHERE id = #{id} AND weekday = #{weekday};
+	 </delete>
+	 
+	 <!-- 해당 요일 해당 시간 삭제 -->
+	 <delete id="deleteOneMealDiet" parameterType="Map">
+	 	DELETE FROM diet
+	 	WHERE id = #{id} AND weekday = #{weekday} AND meal = #{meal};
+	 </delete>
+	 
+	 <!-- 해당 요일 해당 시간 음식 삭제 -->
+	 <delete id="deleteOneFoodDiet" parameterType="Diet">
+	 	DELETE FROM diet
+	 	WHERE id = #{id} AND weekday = #{weekday} AND meal = #{meal} AND food = #{food};
+	 </delete>
+</mapper>
