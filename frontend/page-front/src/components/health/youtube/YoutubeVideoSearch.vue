@@ -49,6 +49,7 @@ const search = function () {
 }
 
 .search-input {
+  
   padding: 12px 18px;
   font-size: 16px;
   border: 1px solid #ccc;  /* Lighter border */
@@ -60,6 +61,7 @@ const search = function () {
 }
 
 .search-input:focus {
+  
   border-color: #6c63ff;  /* Soft purple on focus */
   box-shadow: 0 0 5px rgba(108, 99, 255, 0.3);  /* Subtle shadow effect on focus */
 }

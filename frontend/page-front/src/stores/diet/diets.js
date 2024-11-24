@@ -1,25 +1,70 @@
 import { ref, computed } from 'vue';
 import { defineStore } from 'pinia';
 import axios from 'axios';
-import { reject } from 'lodash';
-import { Collapse } from 'bootstrap';
 
 const REST_API_URL = 'http://localhost:8080/diet';
 
 export const useDietStore = defineStore('diet', () => {
   const userId = JSON.parse(sessionStorage.getItem('user')).id;
   const userDiet = ref([]);
+  const dietData = ref({});
 
-  /* DB 데이터 불러오기 */
-  const getMeals = (days, mealOpt) => {
+  // DB 데이터를 불러오는 함수
+  const mapData = (data) => {
+    // 초기화
+    dietData.value = {}; // 요일, 끼니 정보 담을 배열 초기화
+    meals.splice(0, meals.length, ...Array(7).fill(null).map(() => {{ items: [] }}))
+    
+    // 데이터 매핑
+    data.forEach(dietDB => {
+      const dayIdx = days.indexOf(dietDB.weekday);  // 요일
+      const mealIdx = mealOptions.indexOf(dietDB.meal);  // 끼니
+
+      if (dayIdx !== -1 && mealIdx !== -1) {
+        if (!meals[dayIdx].items[mealIdx]) {
+          meals[dayIdx].items[mealIdx] = [];  // 데이터 없으면 빈 배열
+        }
+
+        // 음식 추가
+        meals[dayIdx].items[mealIdx].push(dietDB.food);
+      }
+    })
+    console.log("매핑된 데이터: ", meals)
+  }
+
+  /* 조회 (Read) */
+  const getMeals = () => {
     return axios
-      .get(`${REST_API_URL}/${userId}/${days}/${mealOpt}`)
-      .then((response) => response.data)
+      .get(`${REST_API_URL}/${userId}`, {
+        params: { id: userId }, // 쿼리 파라미터로 사용자 ID 전달
+      })
+      .then((response) => {
+        console.log("조회 성공:", response.data);
+        // 조회된 데이터를 userDiet에 저장
+        userDiet.value = response.data;
+
+        // 데이터 매핑 및 UI 반영
+        response.data.forEach((diet) => {
+          const dayIndex = days.indexOf(diet.weekday); // 요일 인덱스 찾기
+          const mealIndex = mealOptions.indexOf(diet.meal); // 끼니 인덱스 찾기
+
+          if (dayIndex !== -1 && mealIndex !== -1) {
+            if (!meals[dayIndex].items[mealIndex]) {
+              meals[dayIndex].items[mealIndex] = [];
+            }
+            meals[dayIndex].items[mealIndex].push(diet.food);
+          }
+        });
+
+        return response.data; // 데이터 반환
+      })
       .catch((error) => {
-        console.error("전체 식단 조회 실패:", error);
+        console.error("조회 실패:", error);
         throw error;
       });
   };
+
+
 
   /* 입력 (Create) */
   const saveMeals = (days, mealOpt, diet) => {    
@@ -49,100 +94,67 @@ export const useDietStore = defineStore('diet', () => {
   };
 
 
-  /* 조회 (Read) */
-  // 전체 식단 데이터 조회
-
-  // 요일별 조회
-  const showMealsDay = (days) => {
-    return new Promise((resolve, reject) => {
-      axios.get(`${REST_API_URL}/${userId}/${days}`, {
-        data: days
-      })
-      .then(response => {
-        if (response.data && Array.isArray(response.data)) {
-          resolve(response.data)
-        }
-        else {
-          resolve([])
-        }
-      })
-      .catch(error => {
-        console.error("요일별 조회 실패: ", error)
-        reject(error);
-      });
-    });
-  };
-
-  // 요일 & 시간대별 조회
-  const showMealsDayTime = (days, mealOpt) => {
-    return new Promise((resolve, reject) => {
-      axios.get(`${REST_API_URL}/${userId}/${days}/${mealOpt}`, {
-        params: { days, mealOpt }
-      })
-        .then(response => {
-          if (response.data && Array.isArray(response.data)) {
-            resolve(response.data);
-          } else {
-            resolve([]);
-          }
-        })
-        .catch(error => {
-          console.error('시간대별 식단 조회 중 오류 발생:', error);
-          reject(error);
-        });
-    });
-  }
-
-  // 저장 즉시 팝업 창에 뜨도록
-
-
-  // 팝업 창 열리면 자동 조회 (해당 요일 해당 시간 조회)
-
-
-  // day-box의 white-box에 표시되도록
-    
-
   // 삭제 (해당 요일 해당 시간 각각 음식)
-  const deleteEachMeals = ({ days, mealOpt, diet }) => {
+  const deleteEachMeals = ({ days }) => {
     const deleteData = {
       id: userId,
       weekday: days,
-      meal: mealOpt,
-      food: diet,
-    }
-    console.log(deleteData)
+    };
+    console.log(deleteData);
 
-    axios.delete(`${REST_API_URL}`, {
+    return axios.delete(`${REST_API_URL}/${userId}/${days}`, {
       data: deleteData
     })
     .then(() => {
-      console.log("삭제 성공", diet);
+      console.log("삭제 성공");
     })
     .catch((error) => {
       console.error("삭제 실패: ", error);
+      throw error;
     });
-  }
+  };
 
-  // 삭제 (해당 요일 해당 시간 식단 전체)
-  const deleteDayTimeMeals = (days, mealOpt) => {
-    axios.delete(`${REST_API_URL}/${userId}/${days}/${mealOpt}`)
-      .then(() => {
-        console.log("삭제 성공");
+  // 해당 요일 식단 전체 삭제
+  const deleteDayMeals = ({ days }) => {
+    const deleteData = {
+      id: userId,
+      weekday: days,
+    };
+    return axios.delete(`${REST_API_URL}/${userId}/${days}`, {
+      data: deleteData
+    })
+    .then(() => {
+      console.log("삭제 성공");
+    })
+    .catch((error) => {
+      console.log("삭제 실패", error);
+      throw error
+    })
+  };
+
+  // 1주일 식단 모두 삭제
+  const deleteAll = () => {
+    return axios.delete(`${REST_API_URL}/${userId}`, {  // return 안쓰면 화면에서 안 사라짐
+        params: { id: userId }, // 사용자 ID 전달
+      })
+      .then((response) => {
+        console.log("1주일 식단 삭제 성공:", response.data);        
       })
       .catch((error) => {
-        console.error("삭제 실패: ", error);
+        console.error("1주일 식단 삭제 실패:", error);
+        throw error; // 에러 전달
       });
   };
 
   return {
     userId,
     userDiet,
+    mapData,
     getMeals,
-    showMealsDay,
-    showMealsDayTime,
     saveMeals,
     deleteEachMeals,
-    deleteDayTimeMeals,
+    deleteDayMeals,
+    deleteAll,
   };
 
 });

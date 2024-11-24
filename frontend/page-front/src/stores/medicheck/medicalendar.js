@@ -24,7 +24,21 @@ export const useMediCalendar = defineStore('calendar', () => {
   // DB 데이터를 eventNotes에 매핑
   const mapDataToEvents = (data) => {
     eventNotes.value = {};
-    data.forEach(plan => {
+    
+    // 데이터가 배열이 아닌 경우 처리
+    const planArray = Array.isArray(data) ? data : data.data || [];
+    
+    if (!planArray.length) {
+      
+      return;
+    }
+
+    planArray.forEach(plan => {
+      if (!plan || typeof plan !== 'object') {
+        console.log('Invalid plan data:', plan);
+        return;
+      }
+
       const dateKey = formatDate(plan.date);
       const options = [];
       
@@ -46,10 +60,21 @@ export const useMediCalendar = defineStore('calendar', () => {
     isLoading.value = true;
     try {
       const response = await axios.get(`${REST_API_URL}/${userId}`);
-      userPlan.value = response.data;
+      
+      // 응답 데이터 구조 확인 및 처리
+      if (response.data === null || response.data === undefined) {
+        console.log('No data received from the server');
+        userPlan.value = [];
+        eventNotes.value = {};
+        return;
+      }
+
+      userPlan.value = Array.isArray(response.data) ? response.data : [response.data];
       mapDataToEvents(response.data);
     } catch (error) {
       console.error('데이터 가져오기 실패:', error);
+      userPlan.value = [];
+      eventNotes.value = {};
       throw error;
     } finally {
       isLoading.value = false;

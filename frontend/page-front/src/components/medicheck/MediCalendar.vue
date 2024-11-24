@@ -1,3 +1,4 @@
+<!--MediCalendar.vue-->
 <template>
   <div class="calendar-container">
     <!-- Header -->
@@ -150,7 +151,7 @@ const isToday = (date) => {
 /* 동작 컨트롤 */
 const hasEvents = (date) => {
   const formattedDate = calendarStore.formatDate(date);
-  return calendarStore.getEventNotes[formattedDate] !== undefined;
+  return calendarStore.getEventNotes[formattedDate] !== null;
 };
 
 const getEventOptions = (date) => {
@@ -199,7 +200,7 @@ const saveEvent = async () => {
   const formattedDate = calendarStore.formatDate(selectedDate.value);
   await modalStore.saveEvent(calendarStore.userId, formattedDate, local피검사.value, local약처방.value);
   await calendarStore.getPlanData(calendarStore.userId);  // 캘린더 데이터 다시 로드
-
+  
   // 저장 후 상태 초기화
   local피검사.value = false;
   local약처방.value = false;
@@ -224,12 +225,15 @@ const modifyEvent = async () => {
 const deleteEvent = async () => {
   isSubmitting.value = true;
   const formattedDate = calendarStore.formatDate(selectedDate.value);
+  
   await modalStore.deleteEvent(calendarStore.userId, formattedDate);
   await calendarStore.getPlanData(calendarStore.userId);  // 캘린더 데이터 다시 로드
 
   isSubmitting.value = false;
+  
   closeModal();
 };
+
 
 const previousMonth = () => {
   currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() - 1);

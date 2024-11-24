@@ -2,13 +2,14 @@
   <div>
     <HeaderNav />
     
+    <!-- 모든 데이터 삭제 -->
+    <button class="del-all-btn" @click="deleteAll">전체삭제</button>
+    
     <!-- 요일과 식단 -->
     <main class="diet-main">
       <div v-for="(day, index) in days" :key="index" class="day-box">
         <div class="day-header">
-          <div class="day-label">
-            {{ day }}
-          </div>
+          <div class="day-label">{{ day }}</div>
         </div>
 
         <!-- 첫 번째 white-box -->
@@ -36,9 +37,10 @@
         </div>
 
         <!-- 주 단위 삭제 -->
-        <button class="del-day" @click="deleteDayMeals">삭제</button>
+        <button class="del-day" @click="deleteDayMeals(index)">삭제</button>
       </div>
     </main>
+
     
     <!-- 추가 섹션 영역 -->
     <section class="diet-section"></section>
@@ -70,7 +72,6 @@
 
         <div class="popup-buttons">
           <button class="save-btn" @click="closePopup">저장</button>
-          <!-- <button class="del-btn" v-if="menuInputs.length > 0" @click="deleteMeals">전체삭제</button> -->
           <button class="cancel-btn" @click="closePopup">취소</button>
         </div>
       </div>
@@ -83,6 +84,7 @@
   import { onMounted, reactive, ref } from "vue";
   import {useDietStore} from '@/stores/diet/diets'
 
+  const userId = JSON.parse(sessionStorage.getItem('user')).id;
   const days = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"];
   const mealOptions = ["아침", "점심", "저녁"]
   const meals = reactive(Array(7).fill(null).map(() => ({ items: [] })));  // 요일별 독립된 배열 생성
@@ -97,70 +99,28 @@
   
   // DB 데이터를 화면에 로드
   const initializeMeals = () => {
-    store.getMeals()
+    store
+      .getMeals() // store의 getMeals 호출
       .then((response) => {
-        response.forEach(({ weekday, meal, food }) => {
-          const dayIdx = days.indexOf(weekday);
-          const mealIdx = mealOptions.indexOf(meal);
-          if (dayIdx !== -1 && mealIdx !== -1) {
-            if (!meals[dayIdx].items[mealIdx]) {
-              meals[dayIdx].items[mealIdx] = [];
-            }
-            meals[dayIdx].items[mealIdx].push(food);
-          }
-        });
+        mapData(response); // 데이터 매핑
       })
-      .catch((error) => console.error("초기 데이터 로드 실패:", error));
+      .catch((error) => {
+        console.error("초기 데이터 로드 실패:", error);
+      });
   };
 
-  /* 메뉴 저장 직후 화면에 표시 */
-  const showMeals = () => {
-    const dayIdx = selectedDay.value;
-    const mealIdx = selectedBoxIdx.value;
-
-    // 해당 요일, 시간 메뉴 조회
-    store.showMealDayTime(days[dayIdx], mealOptions[mealIdx])
-    .then((response) => {
-      meals[dayIdx].items[mealIdx] = response.map(item => item.food);
-    })
-    .catch(error => {
-      console.log("메뉴 조회 실패: ", error)
-    })
-  }
-
-  // 특정 요일 전체메뉴 조회
-  const showMealsDay = (dayIdx) => {
-    store.showMealsDay(days[dayIdx])  // 스토어에서 해당 요일의 전체 메뉴 조회
-    .then((response) => {
-
-      response.forEach(item => {  // 조회된 데이터를 시간대별로 분류하여 meals 객체에 저장
-        const mealIdx = mealOptions.indexOf(item.meal);
-
-        if (mealIdx !== -1) {
-          // 해당 시간대 배열 없으면 초기화
-          if(!meals[dayIdx].items[mealIdx]) {
-            meals[dayIdx].items[mealIdx] = [];
-          }
-
-          // 같은 시간대 메뉴들만 필터링하여 저장
-          meals[dayIdx].items[mealIdx] = response
-          .filter(r => r.meal === mealOptions[mealIdx])
-          .map(r => r.food)
-        }
-      });
-    })
-    .catch(error => {
-      console.error("일별 메뉴 조회 실패: ", error)
-    })
-  }
 
   // 팝업 창 열리면 기존 데이터 보이도록
   const openPopup = (dayIdx, boxIdx) => {
     isPopupVisible.value = true;
-    console.log(dayIdx, boxIdx)
     selectedDay.value = dayIdx;
     selectedBoxIdx.value = boxIdx;
+    
+    menuInputs.splice(0, menuInputs.length); // 입력창 초기화
 
+    // 해당 dayIdx와 boxIdx의 기존 데이터를 menuInputs에 복사
+    const existingData = meals[dayIdx]?.items[boxIdx] || [];
+    menuInputs.splice(0, menuInputs.length, ...existingData); // 기존 데이터로 초기화
   };
 
   // 입력 완료 후 팝업 창 종료 (Front에서)
@@ -177,10 +137,7 @@
   };
 
 
-  /* DB 연동 */
-
-  /* 조회 */
-  // 메뉴
+  /* ***** DB 연동 ***** */
 
   /* 입력 (팝업 창 안 +버튼) */
   const saveMeals = () => {
@@ -189,7 +146,7 @@
     // 현재 선택된 요일과 시간대의 메뉴 배열 가져오기
     let currentMeals = meals[selectedDay.value]?.items[selectedBoxIdx.value];
     
-    // 만약 해당 배열이 없다면 초기화
+    // 해당 배열 없으면 초기화
     if (!currentMeals) {
       if (!meals[selectedDay.value]) {
         meals[selectedDay.value] = { items: {} };
@@ -206,7 +163,7 @@
       // UI 업데이트
       currentMeals.push(newItem);
       menuInputs.push(newItem);
-      showMeals()
+
     } else if (currentMeals.includes(newItem)) {
       alert("이미 입력한 메뉴입니다.");
     } else {
@@ -214,13 +171,15 @@
     }
   };
 
-  // 3. 컴포넌트가 마운트될 때 초기화
+  // 컴포넌트가 마운트될 때 초기화
   onMounted(() => {
     initializeMeals();
+    console.log("로드된 데이터: ", meals);
   });
 
+
   /* 삭제 */
-  // 팝업 창 안 빨간색 - 버튼
+  // 1) 팝업 창 안 빨간색 - 버튼
   const deleteEachMeals = (foodIdx) => {
     // 선택된 요일, 시간대 음식
     const currentMeals = meals[selectedDay.value].items[selectedBoxIdx.value];
@@ -240,30 +199,25 @@
     }
   }
 
-  // 팝업창 하단 '전체 삭제' 버튼
-  const deleteDayTimeMeals = () => {
-    store.deleteDayTimeMeals(days[selectedDay.value], mealOptions[selectedBoxIdx.value]);
-    meals[selectedDay.value].items.splice(selectedBoxIdx.value, 1, "");
-    menuInputs.splice(0, menuInputs.length);
+  // 2) 특정 일 데이터 모두 삭제
+  const deleteDayMeals = (dayIdx) => {
+    if (confirm(`${days[dayIdx]}의 모든 식단을 삭제하시겠습니까?`)) {
+      const selectedDay = days[dayIdx];  // 삭제할 요일
 
+      store.deleteDayMeals({ days: selectedDay })
+      meals[dayIdx].items = [];
+    }
+  }
+
+  // 3) 1주일 데이터 전체삭제
+  const deleteAll = () => {
+    if (confirm("정말 모든 데이터를 삭제하시겠습니까?")) {
+      store.deleteAll() // 스토어 메서드 호출
+      
+      // UI 및 데이터 초기화
+      meals.splice(0, meals.length, ...Array(7).fill(null).map(() => ({ items: [] }))); 
+    }
   };
-
-  
-  // day-box 하단 특정 요일 전체 삭제
-
-
-
-  /* 조회 */
-  // 저장 즉시 조회
-  const showMeal = () => {
-    
-  }
-
-  // 해당 날짜 조회 (white-box 표시)
-  const showDayMeals = () => {
-    
-  }
-
 </script>
 
 <style scoped>
@@ -436,7 +390,7 @@
     line-height: 1;
   }
 
-  .save-btn, .del-btn, .cancel-btn {
+  .save-btn, .cancel-btn {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 8px;  /* 버튼도 둥글게 */
@@ -455,16 +409,6 @@
     transform: translateY(-1px);
   }
 
-  .del-btn {
-    background-color: goldenrod;
-    color: white;
-  }
-
-  .del-btn:hover {
-    background-color: darkgoldenrod;
-    transform: translateY(-1px);
-  }
-
   .cancel-btn {
     background-color: #f44336;
     color: white;
@@ -478,6 +422,19 @@
   button {
     margin-top: 8px;
     margin-right: 8px;
+  }
+
+  .del-all-btn {
+    background-color: goldenrod;
+    color: black;
+    font-weight: bold;
+    padding: 10px 15px;
+    margin: 40px 8px 8px 25px;
+    margin-left: 25px;
+    margin-bottom: 8px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
   }
 
   footer {

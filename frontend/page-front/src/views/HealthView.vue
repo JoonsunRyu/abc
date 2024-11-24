@@ -47,7 +47,7 @@
   import YoutubeVideoDetail from '@/components/health/youtube/YoutubeVideoDetail.vue';
   import YoutubeVideoSearch from '@/components/health/youtube/YoutubeVideoSearch.vue';
 import HealthCalendar from '@/components/health/HealthCalendar.vue';
-import Chatbot from '@/components/health/chatbot.vue';
+
   
 
   const userObject = JSON.parse(sessionStorage.getItem('user'))
@@ -60,143 +60,171 @@ import Chatbot from '@/components/health/chatbot.vue';
 </script>
 
 <style scoped>
-  .layout {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
+/* General Layout */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 
-  /* 메인 + 사이드 영역 컨테이너 */
+/* Main and Sidebar Area */
+.content {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+main {
+  flex: 3;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+}
+
+aside {
+  flex: 2;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  box-sizing: border-box;
+  min-height: 50vh; /* Ensure the aside section takes at least 50% of the height */
+}
+
+/* Extra Content Styles (e.g., Youtube search, list, details) */
+.extra-content {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  text-align: center;
+  border-top: 1px solid #ddd;
+  flex: 1; /* Flexibly adjust content to fill available space */
+  min-height: 50vh; /* Set minimum height for better content structure */
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 15px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Input Group Styles for Modal */
+.input-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+/* Footer Styles */
+footer {
+  background-color: #333;
+  color: white;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+/* Responsive Styles (Mobile/Tablet) */
+@media (max-width: 1024px) {
+  /* Adjust the layout for medium-sized screens */
   .content {
-    display: flex;
-    flex: 1; /* 나머지 공간을 채움 */
+    flex-direction: column;  /* Stack main and aside vertically on medium screens */
   }
 
   main {
-    flex: 3;
-    padding: 1rem;
-    background-color: #f9f9f9;
-  }
-
-  .chart-button {
-    display: flex;
-    justify-content: center;
-    margin-top: 30px;
-  }
-
-  /* 모달 스타일 */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .modal-content {
-    background-color: #ffffff;
-    padding: 2rem;
-    border-radius: 15px;  /* 둥근 모서리 */
-    width: 400px;
-    max-width: 90%;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);  /* 그림자 효과 */
-  }
-
-  .modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    color: #333;
-    font-size: 1.25rem;
-  }
-
-  .input-group {
-    margin-bottom: 1.5rem;
-  }
-
-  .input-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-    color: #555;
-  }
-
-  .input-group input {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;  /* 입력창도 둥글게 */
-    font-size: 1rem;
-    transition: border-color 0.2s ease;
-  }
-
-  .input-group input:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
-  }
-
-  .modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .save-btn, .cancel-btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;  /* 버튼도 둥글게 */
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-  }
-
-  .save-btn {
-    background-color: #4CAF50;
-    color: white;
-  }
-
-  .save-btn:hover {
-    background-color: #45a049;
-    transform: translateY(-1px);
-  }
-
-  .cancel-btn {
-    background-color: #f44336;
-    color: white;
-  }
-
-  .cancel-btn:hover {
-    background-color: #da190b;
-    transform: translateY(-1px);
+    flex: 1;  /* Main content takes full width */
+    margin-bottom: 1rem;  /* Add space below main content */
   }
 
   aside {
-    flex: 2;
+    flex: 1;  /* Sidebar adjusts to full width */
+  }
+
+  /* Adjust padding for small screens */
+  .extra-content {
+    min-height: 60vh; /* Increase height on tablets for better spacing */
+  }
+
+  .modal-content {
+    width: 80%; /* Modal takes more width on tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  /* Adjust layout for small screens (phones) */
+  .content {
+    flex-direction: column;  /* Stack main and aside vertically on small screens */
+    padding: 10px;
+  }
+
+  main {
+    flex: 1;
     padding: 1rem;
-    background-color: #f0f0f0;
-    border-left: 1px solid #ddd;
+    margin-bottom: 1rem;
+  }
+
+  aside {
+    flex: 1;
+    margin-bottom: 1rem; /* Add space below aside content */
   }
 
   .extra-content {
-    background-color: #f0f0f0;
+    min-height: 70vh; /* Increase content height on smaller screens */
+  }
+
+  /* Footer: Ensure it stays at the bottom */
+  footer {
     padding: 1rem;
-    text-align: center;
-    border-top: 1px solid #ddd;
-    flex: 1;  /* footer까지 차지하도록 */
-    min-height: 50vh;  /* 최소 높이를 50%로 설정 */
+  }
+
+  /* Modal adjustments for mobile */
+  .modal-content {
+    width: 90%;  /* Modal takes almost full width on small screens */
+    padding: 1rem;  /* Reduce padding for smaller screens */
+  }
+}
+
+@media (max-width: 480px) {
+  /* Further adjustments for very small screens (phones in portrait mode) */
+  .search-title {
+    font-size: 18px;  /* Smaller font for title */
+  }
+
+  .extra-content {
+    min-height: 80vh; /* Ensure content is large enough on very small screens */
+    padding: 0.5rem; /* Adjust padding */
   }
 
   footer {
-    /* background-color: #e9ecef; */
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 0.5rem;
+    font-size: 12px; /* Reduce font size in footer */
   }
+
+  /* Buttons and input fields: Smaller padding and font size */
+  .input-group input {
+    font-size: 0.875rem;  /* Smaller text for input fields */
+    padding: 0.5rem;  /* Adjust input padding */
+  }
+
+  .save-btn, .cancel-btn {
+    padding: 0.5rem 1rem;  /* Smaller buttons */
+    font-size: 0.875rem;  /* Smaller text for buttons */
+  }
+}
+
 </style>
